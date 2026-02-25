@@ -1,0 +1,276 @@
+# Importação via Google Colab
+
+## Passo a Passo
+
+### 1. Abrir o Google Colab
+Acesse: https://colab.research.google.com/
+
+### 2. Criar um novo notebook
+
+### 3. Fazer upload do arquivo Excel
+
+Clique no ícone de pasta 📁 no menu lateral esquerdo e faça upload do arquivo `inventario_final.xlsx`
+
+### 4. Copiar e colar o código abaixo em uma célula
+
+```python
+"""
+Script para importar inventário de endereços do Excel para o Supabase
+Versão otimizada para Google Colab
+"""
+
+# ============================================================
+# CONFIGURAÇÃO - SUAS CREDENCIAIS ESTÃO AQUI
+# ============================================================
+
+SUPABASE_URL = "https://ompimrxcmajdxwpahbub.supabase.co"
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tcGltcnhjbWFqZHh3cGFoYnViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDYzODM5NiwiZXhwIjoyMDg2MjE0Mzk2fQ.xRKq5iB4X3vF6YMiYk215IctVoYuIsY8g5ZUoMnS2iI"
+
+EXCEL_FILE = "inventario_final.xlsx"
+
+# ============================================================
+# INSTALAÇÃO DE DEPENDÊNCIAS
+# ============================================================
+
+print("📦 Instalando dependências...")
+!pip install -q pandas openpyxl supabase
+
+# ============================================================
+# CÓDIGO PRINCIPAL
+# ============================================================
+
+import pandas as pd
+from supabase import create_client, Client
+from typing import List, Dict, Any
+
+BATCH_SIZE = 50
+
+def get_supabase_client() -> Client:
+    """Cria e retorna cliente do Supabase"""
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+def read_excel_file(filename: str) -> pd.DataFrame:
+    """Lê o arquivo Excel e retorna um DataFrame"""
+    try:
+        print(f"📖 Lendo arquivo {filename}...")
+        df = pd.read_excel(filename)
+        print(f"✅ Arquivo lido com sucesso: {len(df)} linhas encontradas")
+        return df
+    except FileNotFoundError:
+        print(f"❌ Erro: Arquivo {filename} não encontrado")
+        print("💡 Faça upload do arquivo no Colab usando o ícone de pasta à esquerda")
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao ler arquivo: {e}")
+        raise
+
+def prepare_row(row: pd.Series) -> Dict[str, Any]:
+    """Prepara uma linha do Excel para inserção no Supabase"""
+    return {
+        "uf": str(row["UF"]).strip() if pd.notna(row["UF"]) else "",
+        "cidade": str(row["CIDADE"]).strip() if pd.notna(row["CIDADE"]) else "",
+        "comunidade": str(row["COMUNIDADE"]).strip() if pd.notna(row["COMUNIDADE"]) else "",
+        "endereco": str(row["ENDEREÇO"]).strip() if pd.notna(row["ENDEREÇO"]) else "",
+        "lat": float(row["LAT"]) if pd.notna(row["LAT"]) else None,
+        "long": float(row["LONG"]) if pd.notna(row["LONG"]) else None,
+        "status": "disponivel"
+    }
+
+def insert_batch(client: Client, batch: List[Dict[str, Any]]) -> tuple[int, List[str]]:
+    """Insere um lote de registros no Supabase"""
+    try:
+        response = client.table("enderecos").insert(batch).execute()
+        return len(batch), []
+    except Exception as e:
+        error_msg = str(e)
+        print(f"⚠️  Erro ao inserir lote: {error_msg}")
+        return 0, [error_msg]
+
+def import_data(client: Client, df: pd.DataFrame) -> None:
+    """Importa os dados do DataFrame para o Supabase"""
+    total_rows = len(df)
+    inserted_count = 0
+    error_count = 0
+    errors = []
+    
+    print(f"\n🚀 Iniciando importação de {total_rows} registros...")
+    print(f"📦 Tamanho do lote: {BATCH_SIZE} registros\n")
+    
+    batch = []
+    
+    for idx, row in df.iterrows():
+        try:
+            prepared_row = prepare_row(row)
+            batch.append(prepared_row)
+            
+            # Inserir quando o lote estiver cheio
+            if len(batch) >= BATCH_SIZE:
+                success, batch_errors = insert_batch(client, batch)
+                inserted_count += success
+                error_count += len(batch_errors)
+                errors.extend(batch_errors)
+                
+                print(f"✓ Progresso: {inserted_count}/{total_rows} registros inseridos ({(inserted_count/total_rows*100):.1f}%)")
+                batch = []
+                
+        except Exception as e:
+            error_msg = f"Linha {idx + 2}: {str(e)}"
+            errors.append(error_msg)
+            error_count += 1
+            print(f"⚠️  {error_msg}")
+    
+    # Inserir registros restantes
+    if batch:
+        success, batch_errors = insert_batch(client, batch)
+        inserted_count += success
+        error_count += len(batch_errors)
+        errors.extend(batch_errors)
+        print(f"✓ Progresso: {inserted_count}/{total_rows} registros inseridos ({(inserted_count/total_rows*100):.1f}%)")
+    
+    # Resumo final
+    print("\n" + "="*60)
+    print("📊 RESUMO DA IMPORTAÇÃO")
+    print("="*60)
+    print(f"✅ Total de registros inseridos: {inserted_count}")
+    print(f"❌ Total de erros: {error_count}")
+    print(f"📈 Taxa de sucesso: {(inserted_count/total_rows*100):.1f}%")
+    
+    if errors:
+        print(f"\n⚠️  ERROS ENCONTRADOS ({len(errors)}):")
+        for i, error in enumerate(errors[:10], 1):
+            print(f"  {i}. {error}")
+        if len(errors) > 10:
+            print(f"  ... e mais {len(errors) - 10} erros")
+    
+    print("="*60)
+
+def main():
+    """Função principal"""
+    print("="*60)
+    print("🗂️  IMPORTADOR DE INVENTÁRIO - SUPABASE")
+    print("="*60)
+    print()
+    
+    # Criar cliente Supabase
+    print("🔌 Conectando ao Supabase...")
+    client = get_supabase_client()
+    print("✅ Conectado ao Supabase\n")
+    
+    # Ler arquivo Excel
+    df = read_excel_file(EXCEL_FILE)
+    
+    # Validar colunas
+    required_columns = ["UF", "CIDADE", "COMUNIDADE", "ENDEREÇO", "LAT", "LONG"]
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        print(f"❌ Erro: Colunas faltando no arquivo: {', '.join(missing_columns)}")
+        print(f"📋 Colunas encontradas: {', '.join(df.columns)}")
+        return
+    
+    print(f"✅ Todas as colunas necessárias foram encontradas")
+    print(f"\n📊 Prévia dos dados:")
+    print(df.head())
+    
+    # Importar dados
+    print(f"\n⚠️  Iniciando importação de {len(df)} registros...")
+    import_data(client, df)
+    
+    print("\n✅ Processo concluído!")
+
+# Executar
+main()
+```
+
+### 5. Executar a célula
+
+Clique no botão ▶️ (Play) ou pressione `Shift + Enter`
+
+### 6. Aguardar a importação
+
+O script vai:
+- Instalar as dependências necessárias
+- Conectar ao Supabase
+- Ler o arquivo Excel
+- Mostrar uma prévia dos dados
+- Importar em lotes de 50 registros
+- Mostrar progresso em tempo real
+- Exibir resumo final
+
+## Exemplo de Saída Esperada
+
+```
+📦 Instalando dependências...
+============================================================
+🗂️  IMPORTADOR DE INVENTÁRIO - SUPABASE
+============================================================
+
+🔌 Conectando ao Supabase...
+✅ Conectado ao Supabase
+
+📖 Lendo arquivo inventario_final.xlsx...
+✅ Arquivo lido com sucesso: 847 linhas encontradas
+✅ Todas as colunas necessárias foram encontradas
+
+📊 Prévia dos dados:
+   UF      CIDADE        COMUNIDADE                    ENDEREÇO        LAT       LONG
+0  RJ  Rio de Janeiro  Rocinha        Rua 1, Rocinha  -22.9876  -43.2485
+1  RJ  Rio de Janeiro  Vidigal        Rua 2, Vidigal  -22.9923  -43.2341
+...
+
+⚠️  Iniciando importação de 847 registros...
+
+🚀 Iniciando importação de 847 registros...
+📦 Tamanho do lote: 50 registros
+
+✓ Progresso: 50/847 registros inseridos (5.9%)
+✓ Progresso: 100/847 registros inseridos (11.8%)
+✓ Progresso: 150/847 registros inseridos (17.7%)
+...
+✓ Progresso: 847/847 registros inseridos (100.0%)
+
+============================================================
+📊 RESUMO DA IMPORTAÇÃO
+============================================================
+✅ Total de registros inseridos: 847
+❌ Total de erros: 0
+📈 Taxa de sucesso: 100.0%
+============================================================
+
+✅ Processo concluído!
+```
+
+## Solução de Problemas
+
+### Erro: "Arquivo não encontrado"
+- Certifique-se de fazer upload do arquivo `inventario_final.xlsx` no Colab
+- Verifique se o nome do arquivo está correto (incluindo a extensão .xlsx)
+
+### Erro: "Colunas faltando"
+- Verifique se o Excel tem as colunas: UF, CIDADE, COMUNIDADE, ENDEREÇO, LAT, LONG
+- Atenção aos acentos e maiúsculas/minúsculas
+
+### Erro de conexão com Supabase
+- Verifique se a URL e a SERVICE_KEY estão corretas
+- Certifique-se de estar usando a SERVICE_ROLE_KEY (não a anon key)
+
+### Erro de permissão
+- Verifique as políticas RLS da tabela `enderecos`
+- A SERVICE_ROLE_KEY deve ter permissão para inserir dados
+
+## Dicas
+
+1. **Teste primeiro**: Teste com um arquivo pequeno (10-20 linhas) antes de importar tudo
+2. **Backup**: Faça backup da tabela antes de importar
+3. **Limpeza**: Se precisar reimportar, limpe a tabela primeiro no SQL Editor:
+   ```sql
+   DELETE FROM enderecos WHERE status = 'disponivel';
+   ```
+4. **Salvar notebook**: Salve o notebook no Google Drive para reutilizar depois
+
+## Link Direto para o Colab
+
+Você pode criar um link direto para o notebook salvando-o no GitHub e usando:
+```
+https://colab.research.google.com/github/seu-usuario/seu-repo/blob/main/import_inventario.ipynb
+```

@@ -8,11 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nome, setNome] = useState("");
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -34,32 +32,16 @@ const Login = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { nome },
-            emailRedirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        toast({
-          title: "Conta criada!",
-          description: "Verifique seu e-mail para confirmar o cadastro.",
-        });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        navigate("/");
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      navigate("/");
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Tente novamente.",
+        title: "Erro ao fazer login",
+        description: error.message || "E-mail ou senha incorretos.",
         variant: "destructive",
       });
     } finally {
@@ -113,27 +95,14 @@ const Login = () => {
 
           <div>
             <h2 className="text-2xl font-display font-bold text-foreground">
-              {isSignUp ? "Criar conta" : "Entrar"}
+              Entrar
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {isSignUp ? "Preencha os dados para se cadastrar" : "Acesse o sistema de gestão OOH"}
+              Acesse o sistema de gestão OOH
             </p>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {isSignUp && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Nome</label>
-                <input
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
-                />
-              </div>
-            )}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">E-mail</label>
               <input
@@ -172,19 +141,9 @@ const Login = () => {
               className="w-full py-2.5 rounded-lg gradient-brand text-primary-foreground text-sm font-semibold shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSignUp ? "Cadastrar" : "Entrar"}
+              Entrar
             </button>
           </form>
-
-          <p className="text-center text-sm text-muted-foreground">
-            {isSignUp ? "Já tem uma conta?" : "Não tem conta?"}{" "}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary font-medium hover:underline"
-            >
-              {isSignUp ? "Entrar" : "Cadastre-se"}
-            </button>
-          </p>
 
           <p className="text-center text-xs text-muted-foreground">
             Digital Favela © 2026 — Sistema de uso interno

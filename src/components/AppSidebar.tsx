@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import type { UserRole } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   MapPin,
@@ -15,21 +16,65 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: MapPin, label: "Inventário", path: "/inventario" },
-  { icon: Megaphone, label: "Campanhas", path: "/campanhas" },
-  { icon: Map, label: "Mapa", path: "/mapa" },
-  { icon: FileText, label: "Relatórios", path: "/relatorios" },
-  { icon: Brain, label: "IA Estratégia", path: "/ia" },
-  { icon: Users, label: "Usuários", path: "/usuarios" },
+interface NavItem {
+  icon: any;
+  label: string;
+  path: string;
+  allowedRoles: UserRole[];
+}
+
+const navItems: NavItem[] = [
+  { 
+    icon: LayoutDashboard, 
+    label: "Dashboard", 
+    path: "/", 
+    allowedRoles: ['administrador', 'operacoes'] 
+  },
+  { 
+    icon: MapPin, 
+    label: "Inventário", 
+    path: "/inventario", 
+    allowedRoles: ['administrador', 'operacoes'] 
+  },
+  { 
+    icon: Megaphone, 
+    label: "Campanhas", 
+    path: "/campanhas", 
+    allowedRoles: ['administrador', 'operacoes', 'coordenador'] 
+  },
+  { 
+    icon: Map, 
+    label: "Mapa", 
+    path: "/mapa", 
+    allowedRoles: ['administrador', 'operacoes', 'coordenador'] 
+  },
+  { 
+    icon: FileText, 
+    label: "Relatórios", 
+    path: "/relatorios", 
+    allowedRoles: ['administrador', 'operacoes'] 
+  },
+  { 
+    icon: Brain, 
+    label: "IA Estratégia", 
+    path: "/ia", 
+    allowedRoles: ['administrador', 'operacoes'] 
+  },
+  { 
+    icon: Users, 
+    label: "Usuários", 
+    path: "/usuarios", 
+    allowedRoles: ['administrador'] 
+  },
 ];
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, hasRole } = useAuth();
+
+  const filteredNavItems = navItems.filter(item => hasRole(item.allowedRoles));
 
   return (
     <aside
@@ -57,7 +102,7 @@ export function AppSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
