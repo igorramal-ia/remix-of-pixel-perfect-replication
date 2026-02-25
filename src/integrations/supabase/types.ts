@@ -14,16 +14,265 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campanhas: {
+        Row: {
+          cidade: string | null
+          cliente: string
+          criado_em: string
+          data_fim: string | null
+          data_inicio: string | null
+          gestor_id: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          cidade?: string | null
+          cliente: string
+          criado_em?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          gestor_id?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          cidade?: string | null
+          cliente?: string
+          criado_em?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          gestor_id?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      enderecos: {
+        Row: {
+          cidade: string
+          comunidade: string
+          criado_em: string
+          criado_por: string | null
+          endereco: string
+          id: string
+          lat: number | null
+          long: number | null
+          status: Database["public"]["Enums"]["endereco_status"]
+          uf: string
+        }
+        Insert: {
+          cidade: string
+          comunidade: string
+          criado_em?: string
+          criado_por?: string | null
+          endereco: string
+          id?: string
+          lat?: number | null
+          long?: number | null
+          status?: Database["public"]["Enums"]["endereco_status"]
+          uf: string
+        }
+        Update: {
+          cidade?: string
+          comunidade?: string
+          criado_em?: string
+          criado_por?: string | null
+          endereco?: string
+          id?: string
+          lat?: number | null
+          long?: number | null
+          status?: Database["public"]["Enums"]["endereco_status"]
+          uf?: string
+        }
+        Relationships: []
+      }
+      instalacoes: {
+        Row: {
+          campanha_id: string
+          criado_em: string
+          data_expiracao: string | null
+          data_instalacao: string | null
+          endereco_id: string
+          finalizado_em: string | null
+          foto_url: string | null
+          id: string
+          representante_id: string | null
+          status: Database["public"]["Enums"]["instalacao_status"]
+        }
+        Insert: {
+          campanha_id: string
+          criado_em?: string
+          data_expiracao?: string | null
+          data_instalacao?: string | null
+          endereco_id: string
+          finalizado_em?: string | null
+          foto_url?: string | null
+          id?: string
+          representante_id?: string | null
+          status?: Database["public"]["Enums"]["instalacao_status"]
+        }
+        Update: {
+          campanha_id?: string
+          criado_em?: string
+          data_expiracao?: string | null
+          data_instalacao?: string | null
+          endereco_id?: string
+          finalizado_em?: string | null
+          foto_url?: string | null
+          id?: string
+          representante_id?: string | null
+          status?: Database["public"]["Enums"]["instalacao_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instalacoes_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "campanhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instalacoes_endereco_id_fkey"
+            columns: ["endereco_id"]
+            isOneToOne: false
+            referencedRelation: "enderecos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventario_historico: {
+        Row: {
+          alterado_em: string
+          alterado_por: string | null
+          endereco_id: string
+          id: string
+          status_anterior: Database["public"]["Enums"]["endereco_status"] | null
+          status_novo: Database["public"]["Enums"]["endereco_status"]
+        }
+        Insert: {
+          alterado_em?: string
+          alterado_por?: string | null
+          endereco_id: string
+          id?: string
+          status_anterior?:
+            | Database["public"]["Enums"]["endereco_status"]
+            | null
+          status_novo: Database["public"]["Enums"]["endereco_status"]
+        }
+        Update: {
+          alterado_em?: string
+          alterado_por?: string | null
+          endereco_id?: string
+          id?: string
+          status_anterior?:
+            | Database["public"]["Enums"]["endereco_status"]
+            | null
+          status_novo?: Database["public"]["Enums"]["endereco_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventario_historico_endereco_id_fkey"
+            columns: ["endereco_id"]
+            isOneToOne: false
+            referencedRelation: "enderecos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          criado_em: string
+          email: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          criado_em?: string
+          email: string
+          id: string
+          nome: string
+        }
+        Update: {
+          criado_em?: string
+          email?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      proprietarios: {
+        Row: {
+          audio_url: string | null
+          cpf: string | null
+          criado_em: string
+          endereco_id: string | null
+          id: string
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          cpf?: string | null
+          criado_em?: string
+          endereco_id?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          cpf?: string | null
+          criado_em?: string
+          endereco_id?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proprietarios_endereco_id_fkey"
+            columns: ["endereco_id"]
+            isOneToOne: false
+            referencedRelation: "enderecos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "representante" | "admin" | "gestor" | "cliente"
+      endereco_status: "disponivel" | "ocupado" | "inativo" | "manutencao"
+      instalacao_status: "ativa" | "finalizada" | "cancelada" | "pendente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +399,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["representante", "admin", "gestor", "cliente"],
+      endereco_status: ["disponivel", "ocupado", "inativo", "manutencao"],
+      instalacao_status: ["ativa", "finalizada", "cancelada", "pendente"],
+    },
   },
 } as const
