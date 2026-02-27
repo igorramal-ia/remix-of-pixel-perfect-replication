@@ -1,0 +1,65 @@
+=====================================
+NORMALIZAR ENDEREÇOS - PASSO A PASSO
+=====================================
+
+PASSO 1: Acessar Supabase
+--------------------------
+URL: https://supabase.com/dashboard/project/ompimrxcmajdxwpahbub
+Menu: SQL Editor → New Query
+
+PASSO 2: Executar Normalização
+-------------------------------
+1. Abrir arquivo: normalize-capitalization.sql
+2. Copiar TODO o conteúdo (Ctrl+A, Ctrl+C)
+3. Colar no SQL Editor (Ctrl+V)
+4. Clicar em "Run" ou pressionar Ctrl+Enter
+5. Aguardar 5-10 segundos
+
+PASSO 3: Verificar Resultado
+-----------------------------
+O script mostra automaticamente:
+- Total de registros
+- Total de cidades únicas
+- Lista de cidades normalizadas
+
+PASSO 4: Confirmar Cidades
+---------------------------
+Execute esta query no SQL Editor:
+
+SELECT DISTINCT cidade 
+FROM enderecos 
+ORDER BY cidade;
+
+Deve mostrar:
+✅ Belo Horizonte
+✅ Fortaleza
+✅ Maceió
+✅ Recife
+✅ Rio De Janeiro (não "RO DE JANEIRO")
+✅ Salvador
+✅ São Paulo
+
+PASSO 5: Corrigir "RO DE JANEIRO" (Se Necessário)
+--------------------------------------------------
+Se aparecer "Ro De Janeiro" em vez de "Rio De Janeiro":
+
+1. New Query no SQL Editor
+2. Copiar conteúdo de: fix-rio-de-janeiro.sql
+3. Executar
+4. Verificar novamente
+
+PRONTO! ✅
+----------
+Todos os dados estão normalizados em Title Case.
+
+VERIFICAÇÃO FINAL:
+------------------
+Execute:
+
+SELECT DISTINCT cidade FROM enderecos ORDER BY cidade LIMIT 10;
+
+Tudo deve estar em Title Case (primeira letra maiúscula).
+
+DÚVIDAS?
+--------
+Consulte: EXECUTAR_NORMALIZACAO_SIMPLES.md

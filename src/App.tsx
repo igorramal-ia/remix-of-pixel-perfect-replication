@@ -10,9 +10,13 @@ import { AppLayout } from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Campaigns from "./pages/Campaigns";
+import CampaignDetail from "./pages/CampaignDetail";
 import MapPage from "./pages/MapPage";
+import RelatoriosPage from "./pages/RelatoriosPage";
 import Login from "./pages/Login";
 import Users from "./pages/Users";
+import Profile from "./pages/Profile";
+import TestGemini from "./pages/TestGemini";
 import NotFound from "./pages/NotFound";
 import { PlaceholderPage } from "./components/PlaceholderPage";
 
@@ -31,7 +35,7 @@ const App = () => (
               <Route 
                 path="/" 
                 element={
-                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes']}>
+                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes', 'coordenador']}>
                     <Dashboard />
                   </RoleProtectedRoute>
                 } 
@@ -53,9 +57,17 @@ const App = () => (
                 } 
               />
               <Route 
-                path="/mapa" 
+                path="/campanhas/:id" 
                 element={
                   <RoleProtectedRoute allowedRoles={['administrador', 'operacoes', 'coordenador']}>
+                    <CampaignDetail />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/mapa" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes']}>
                     <MapPage />
                   </RoleProtectedRoute>
                 } 
@@ -63,8 +75,8 @@ const App = () => (
               <Route 
                 path="/relatorios" 
                 element={
-                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes']}>
-                    <PlaceholderPage page="reports" />
+                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes', 'coordenador']}>
+                    <RelatoriosPage />
                   </RoleProtectedRoute>
                 } 
               />
@@ -82,6 +94,22 @@ const App = () => (
                   <RoleProtectedRoute allowedRoles={['administrador']}>
                     <Users />
                   </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/perfil" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/test-gemini" 
+                element={
+                  <ProtectedRoute>
+                    <TestGemini />
+                  </ProtectedRoute>
                 } 
               />
             </Route>

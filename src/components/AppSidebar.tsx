@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard, 
     label: "Dashboard", 
     path: "/", 
-    allowedRoles: ['administrador', 'operacoes'] 
+    allowedRoles: ['administrador', 'operacoes', 'coordenador'] 
   },
   { 
     icon: MapPin, 
@@ -46,7 +46,7 @@ const navItems: NavItem[] = [
     icon: Map, 
     label: "Mapa", 
     path: "/mapa", 
-    allowedRoles: ['administrador', 'operacoes', 'coordenador'] 
+    allowedRoles: ['administrador', 'operacoes'] // Removido 'coordenador'
   },
   { 
     icon: FileText, 
@@ -126,6 +126,18 @@ export function AppSidebar() {
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-sidebar-border space-y-1">
+        <NavLink
+          to="/perfil"
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+            location.pathname === "/perfil"
+              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          )}
+        >
+          <Users className="w-5 h-5 shrink-0" />
+          {!collapsed && <span>Meu Perfil</span>}
+        </NavLink>
         <button
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent w-full transition-all"
         >

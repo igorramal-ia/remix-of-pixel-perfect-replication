@@ -1,0 +1,52 @@
+=====================================
+NORMALIZAÇÃO DE ENDEREÇOS - GUIA RÁPIDO
+=====================================
+
+PASSO 1: Acessar Supabase
+--------------------------
+URL: https://supabase.com/dashboard/project/ompimrxcmajdxwpahbub
+Menu: SQL Editor → New Query
+
+PASSO 2: Executar Normalização
+-------------------------------
+1. Abrir arquivo: normalize-enderecos.sql
+2. Copiar TODO o conteúdo
+3. Colar no SQL Editor
+4. Clicar em "Run" ou pressionar Ctrl+Enter
+5. Aguardar conclusão (5-30 segundos)
+
+PASSO 3: Verificar Resultado
+-----------------------------
+Você verá um relatório como:
+
+Total de registros antes: 1500
+Total de registros depois: 1200
+Total de duplicatas removidas: 300
+
+PASSO 4: Adicionar Trigger (Opcional mas Recomendado)
+------------------------------------------------------
+1. New Query no SQL Editor
+2. Abrir arquivo: supabase/migrations/20260225190100_add_normalize_trigger.sql
+3. Copiar e colar
+4. Executar
+
+PRONTO! ✅
+----------
+- Dados normalizados para Title Case
+- Duplicatas removidas
+- Trigger ativo para novos registros
+
+VERIFICAÇÃO RÁPIDA:
+-------------------
+Execute no SQL Editor:
+
+SELECT DISTINCT cidade, comunidade
+FROM enderecos
+ORDER BY cidade
+LIMIT 10;
+
+Deve mostrar tudo em Title Case (ex: "São Paulo", "Heliópolis")
+
+DÚVIDAS?
+--------
+Consulte: NORMALIZACAO_ENDERECOS.md

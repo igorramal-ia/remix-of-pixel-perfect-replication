@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      campanha_coordenadores: {
+        Row: {
+          campanha_id: string
+          coordenador_id: string
+          criado_em: string
+          endereco_ids: string[]
+          id: string
+        }
+        Insert: {
+          campanha_id: string
+          coordenador_id: string
+          criado_em?: string
+          endereco_ids?: string[]
+          id?: string
+        }
+        Update: {
+          campanha_id?: string
+          coordenador_id?: string
+          criado_em?: string
+          endereco_ids?: string[]
+          id?: string
+        }
+        Relationships: []
+      }
       campanhas: {
         Row: {
           cidade: string | null
@@ -44,6 +68,27 @@ export type Database = {
           gestor_id?: string | null
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      cidades_cobertura: {
+        Row: {
+          cidade: string
+          criado_em: string
+          id: string
+          uf: string
+        }
+        Insert: {
+          cidade: string
+          criado_em?: string
+          id?: string
+          uf: string
+        }
+        Update: {
+          cidade?: string
+          criado_em?: string
+          id?: string
+          uf?: string
         }
         Relationships: []
       }
@@ -179,24 +224,54 @@ export type Database = {
           },
         ]
       }
+      notificacoes: {
+        Row: {
+          criado_em: string
+          id: string
+          lida: boolean
+          mensagem: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          lida?: boolean
+          mensagem: string
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           criado_em: string
           email: string
           id: string
           nome: string
+          territorios: Json | null
         }
         Insert: {
           criado_em?: string
           email: string
           id: string
           nome: string
+          territorios?: Json | null
         }
         Update: {
           criado_em?: string
           email?: string
           id?: string
           nome?: string
+          territorios?: Json | null
         }
         Relationships: []
       }
@@ -261,6 +336,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      contar_notificacoes_nao_lidas: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      coordenador_cobre_endereco: {
+        Args: {
+          _coordenador_id: string
+          _endereco_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -268,9 +354,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      marcar_notificacao_lida: {
+        Args: {
+          notificacao_id: string
+        }
+        Returns: undefined
+      }
+      marcar_todas_notificacoes_lidas: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      app_role: "representante" | "admin" | "gestor" | "cliente"
+      app_role: "administrador" | "operacoes" | "coordenador"
       endereco_status: "disponivel" | "ocupado" | "inativo" | "manutencao"
       instalacao_status: "ativa" | "finalizada" | "cancelada" | "pendente"
     }
@@ -400,7 +496,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["representante", "admin", "gestor", "cliente"],
+      app_role: ["administrador", "operacoes", "coordenador"],
       endereco_status: ["disponivel", "ocupado", "inativo", "manutencao"],
       instalacao_status: ["ativa", "finalizada", "cancelada", "pendente"],
     },
