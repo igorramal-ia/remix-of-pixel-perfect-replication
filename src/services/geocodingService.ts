@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
-// Pegar API Key do ambiente
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+// Pegar API Key do ambiente (suporta ambos os nomes)
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
 export interface GeocodingResult {
   latitude: number;
