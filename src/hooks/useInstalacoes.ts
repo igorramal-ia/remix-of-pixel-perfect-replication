@@ -64,9 +64,15 @@ export function useAtivarInstalacao() {
       return result;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes-aviso"] });
+      queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
   });
 }
@@ -126,10 +132,15 @@ export function useFinalizarInstalacao() {
       return result;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes-aviso"] });
       queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
   });
 }
@@ -211,9 +222,14 @@ export function useSubstituirEndereco() {
       return novaInstalacao;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
   });
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { geocodeEAtualizarEndereco } from "@/services/geocodingService";
 
 export interface InventoryItem {
   id: string;
@@ -120,12 +121,37 @@ export function useCreateEndereco() {
         .single();
 
       if (error) throw error;
+      
+      // Buscar coordenadas automaticamente (não bloqueia)
+      if (data && !novoEndereco.lat && !novoEndereco.long) {
+        console.log('🗺️ Buscando coordenadas automaticamente...');
+        geocodeEAtualizarEndereco(
+          data.id,
+          novoEndereco.endereco,
+          novoEndereco.cidade,
+          novoEndereco.uf
+        ).then((success) => {
+          if (success) {
+            console.log('✅ Coordenadas atualizadas automaticamente');
+            // Invalidar cache para atualizar UI
+            queryClient.invalidateQueries({ queryKey: ["inventory"] });
+            queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+          } else {
+            console.warn('⚠️ Não foi possível obter coordenadas automaticamente');
+          }
+        });
+      }
+      
       return data;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos"] });
       queryClient.invalidateQueries({ queryKey: ["total-pontos"] });
       queryClient.invalidateQueries({ queryKey: ["distribuicao-status"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
     },
   });
 }

@@ -367,8 +367,12 @@ export function useCreateCampanha() {
       return campanha;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["campanhas-ativas"] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
     },
   });
 }
@@ -400,9 +404,15 @@ export function useAdicionarPontos() {
       return data;
     },
     onSuccess: (_, variables) => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaign", variables.campanha_id] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
     },
   });
 }
@@ -452,9 +462,14 @@ export function useDeleteCampanha() {
       if (campanhaError) throw campanhaError;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["campanhas-ativas"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
     },
   });
 }
@@ -492,7 +507,12 @@ export function useUpdateCampanha() {
       return data;
     },
     onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["campanhas-ativas"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
     },
   });
 }
