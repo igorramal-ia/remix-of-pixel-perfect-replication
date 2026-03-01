@@ -183,7 +183,7 @@ function adicionarSlideCapa(pptx: PptxGenJS, dados: DadosRelatorio): void {
 
 /**
  * Slide de Fotos (SIMPLIFICADO)
- * Apenas endereço, data e fotos com fundo branco
+ * Apenas endereço, data, coordenadas e fotos com fundo branco
  */
 async function adicionarSlideFotos(
   pptx: PptxGenJS,
@@ -225,6 +225,22 @@ async function adicionarSlideFotos(
   );
 
   currentY += 0.4;
+
+  // Coordenadas (latitude e longitude)
+  if (endereco.latitude && endereco.longitude) {
+    slide.addText(
+      `📍 Coordenadas: ${endereco.latitude.toFixed(6)}, ${endereco.longitude.toFixed(6)}`,
+      {
+        x: 0.5,
+        y: currentY,
+        w: 9,
+        h: 0.3,
+        fontSize: 11,
+        color: '475569',
+      }
+    );
+    currentY += 0.4;
+  }
 
   // Data de instalação
   const dataInstalacao = format(new Date(endereco.data_instalacao), 'dd/MM/yyyy', {

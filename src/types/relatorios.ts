@@ -42,6 +42,8 @@ export interface Instalacao {
   comunidade: string;
   cidade: string;
   uf: string;
+  latitude?: number;
+  longitude?: number;
   status: StatusInstalacao;
   data_instalacao: string;
   data_retirada_real?: string;

@@ -69,7 +69,9 @@ export function useGerarRelatorio() {
               endereco,
               comunidade,
               cidade,
-              uf
+              uf,
+              latitude,
+              longitude
             )
           `
           )
@@ -88,6 +90,8 @@ export function useGerarRelatorio() {
           comunidade: inst.endereco.comunidade,
           cidade: inst.endereco.cidade,
           uf: inst.endereco.uf,
+          latitude: inst.endereco.latitude,
+          longitude: inst.endereco.longitude,
           status: inst.status,
           data_instalacao: inst.data_instalacao,
           data_retirada_real: inst.data_retirada_real,
@@ -95,10 +99,81 @@ export function useGerarRelatorio() {
           fotos_retirada: inst.fotos_retirada || [],
         }));
 
-        // 3. Agrupar hierarquicamente
-        const dadosAgrupados = agruparHierarquicamente(instalacoesFormatadas);
+        // 3. Converter URLs das fotos para signed URLs (para funcionar no PPT)
+        const instalacoesComSignedUrls = await Promise.all(
+          instalacoesFormatadas.map(async (instalacao) => {
+            // Converter fotos da placa
+            const fotosPlacaSignedUrls = await Promise.all(
+              instalacao.fotos_placa.map(async (url) => {
+                try {
+                  // Extrair path do storage da URL
+                  const urlObj = new URL(url);
+                  const pathParts = urlObj.pathname.split('/');
+                  const bucketIndex = pathParts.indexOf('instalacoes-fotos');
+                  if (bucketIndex === -1) return url;
+                  
+                  const storagePath = pathParts.slice(bucketIndex + 1).join('/');
+                  
+                  // Gerar signed URL (válida por 1 hora)
+                  const { data, error } = await supabase.storage
+                    .from('instalacoes-fotos')
+                    .createSignedUrl(storagePath, 3600);
+                  
+                  if (error || !data) {
+                    console.error('Erro ao gerar signed URL:', error);
+                    return url; // Retorna URL original em caso de erro
+                  }
+                  
+                  return data.signedUrl;
+                } catch (error) {
+                  console.error('Erro ao processar URL:', error);
+                  return url;
+                }
+              })
+            );
 
-        // 4. Gerar PPT
+            // Converter fotos da retirada
+            const fotosRetiradaSignedUrls = instalacao.fotos_retirada
+              ? await Promise.all(
+                  instalacao.fotos_retirada.map(async (url) => {
+                    try {
+                      const urlObj = new URL(url);
+                      const pathParts = urlObj.pathname.split('/');
+                      const bucketIndex = pathParts.indexOf('instalacoes-fotos');
+                      if (bucketIndex === -1) return url;
+                      
+                      const storagePath = pathParts.slice(bucketIndex + 1).join('/');
+                      
+                      const { data, error } = await supabase.storage
+                        .from('instalacoes-fotos')
+                        .createSignedUrl(storagePath, 3600);
+                      
+                      if (error || !data) {
+                        console.error('Erro ao gerar signed URL:', error);
+                        return url;
+                      }
+                      
+                      return data.signedUrl;
+                    } catch (error) {
+                      console.error('Erro ao processar URL:', error);
+                      return url;
+                    }
+                  })
+                )
+              : [];
+
+            return {
+              ...instalacao,
+              fotos_placa: fotosPlacaSignedUrls,
+              fotos_retirada: fotosRetiradaSignedUrls,
+            };
+          })
+        );
+
+        // 4. Agrupar hierarquicamente
+        const dadosAgrupados = agruparHierarquicamente(instalacoesComSignedUrls);
+
+        // 5. Gerar PPT
         const dadosRelatorio: DadosRelatorio = {
           campanha,
           dadosAgrupados,
