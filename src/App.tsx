@@ -13,6 +13,8 @@ import Campaigns from "./pages/Campaigns";
 import CampaignDetail from "./pages/CampaignDetail";
 import MapPage from "./pages/MapPage";
 import RelatoriosPage from "./pages/RelatoriosPage";
+import RelatorioMudancasPage from "./pages/RelatorioMudancasPage";
+import IAConsultivaPage from "./pages/IAConsultivaPage";
 import Login from "./pages/Login";
 import Users from "./pages/Users";
 import Profile from "./pages/Profile";
@@ -81,10 +83,18 @@ const App = () => (
                 } 
               />
               <Route 
+                path="/relatorios/mudancas" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['administrador', 'operacoes', 'coordenador']}>
+                    <RelatorioMudancasPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/ia" 
                 element={
                   <RoleProtectedRoute allowedRoles={['administrador', 'operacoes']}>
-                    <PlaceholderPage page="ai" />
+                    <IAConsultivaPage />
                   </RoleProtectedRoute>
                 } 
               />

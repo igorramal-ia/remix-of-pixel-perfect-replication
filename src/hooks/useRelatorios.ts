@@ -22,11 +22,11 @@ export function useRelatorios(filtros: FiltrosRelatorios = {}) {
         )
         .order('gerado_em', { ascending: false });
 
-      if (filtros.campanhaId) {
+      if (filtros.campanhaId && filtros.campanhaId !== 'todas') {
         query = query.eq('campanha_id', filtros.campanhaId);
       }
 
-      if (filtros.tipo) {
+      if (filtros.tipo && filtros.tipo !== 'todos') {
         query = query.eq('tipo', filtros.tipo);
       }
 

@@ -87,7 +87,7 @@ export async function atualizarCoordenadas(
     
     const { error } = await supabase
       .from('enderecos')
-      .update({ latitude, longitude })
+      .update({ lat: latitude, long: longitude })
       .eq('id', enderecoId);
     
     if (error) {

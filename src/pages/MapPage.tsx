@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { APIProvider, Map, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
+import { APIProvider, Map as GoogleMap, AdvancedMarker, InfoWindow } from "@vis.gl/react-google-maps";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Endereco {
   id: string;
@@ -13,13 +14,19 @@ interface Endereco {
   lat: number;
   long: number;
   status: "disponivel" | "ocupado" | "inativo" | "manutencao";
+  ativo: boolean;
+  status_real: "disponivel" | "ocupado";
+  campanha_nome?: string;
 }
+
+type FiltroStatus = "todos" | "disponivel" | "ocupado";
 
 const MapPage = () => {
   const { toast } = useToast();
   const [enderecos, setEnderecos] = useState<Endereco[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+  const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("todos");
   
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
@@ -33,15 +40,88 @@ const MapPage = () => {
 
   const fetchEnderecos = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar endereços ativos com coordenadas
+      const { data: enderecosData, error: enderecosError } = await supabase
         .from("enderecos")
-        .select("id, uf, cidade, comunidade, endereco, lat, long, status")
+        .select("id, uf, cidade, comunidade, endereco, lat, long, status, ativo")
+        .eq("ativo", true)
         .not("lat", "is", null)
         .not("long", "is", null);
 
-      if (error) throw error;
+      if (enderecosError) {
+        console.error("Erro ao buscar endereços:", enderecosError);
+        throw enderecosError;
+      }
 
-      setEnderecos(data || []);
+      if (!enderecosData || enderecosData.length === 0) {
+        console.log("⚠️ Nenhum endereço encontrado com coordenadas e ativo=true");
+        setEnderecos([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`✅ ${enderecosData.length} endereços ativos encontrados`);
+
+      // Buscar TODAS as instalações (sem filtro por endereço)
+      const { data: instalacoesData, error: instalacoesError } = await supabase
+        .from("instalacoes")
+        .select("endereco_id, status, data_retirada_real, campanha_id");
+
+      if (instalacoesError) {
+        console.error("Erro ao buscar instalações:", instalacoesError);
+        // Continua mesmo com erro nas instalações, mostra endereços sem status
+        const enderecosSimples: Endereco[] = enderecosData.map((endereco) => ({
+          ...endereco,
+          status_real: "disponivel" as const,
+        }));
+        setEnderecos(enderecosSimples);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`✅ ${instalacoesData?.length || 0} instalações encontradas`);
+
+      // Buscar nomes das campanhas se houver instalações
+      const campanhasMap = new Map<string, string>();
+      if (instalacoesData && instalacoesData.length > 0) {
+        const campanhaIds = [...new Set(instalacoesData.map(i => i.campanha_id))];
+        const { data: campanhasData } = await supabase
+          .from("campanhas")
+          .select("id, nome")
+          .in("id", campanhaIds);
+        
+        if (campanhasData) {
+          campanhasData.forEach(c => campanhasMap.set(c.id, c.nome));
+        }
+      }
+
+      // Processar cada endereço para determinar status real
+      const enderecosComStatus: Endereco[] = enderecosData.map((endereco) => {
+        const instalacoesDoEndereco = instalacoesData?.filter(
+          (i) => i.endereco_id === endereco.id
+        ) || [];
+
+        // Verificar se tem instalação ativa ou pendente (ambos ocupam o endereço)
+        const instalacaoAtiva = instalacoesDoEndereco.find(
+          (i) => i.status === "ativa" || i.status === "pendente"
+        );
+
+        if (instalacaoAtiva) {
+          return {
+            ...endereco,
+            status_real: "ocupado" as const,
+            campanha_nome: campanhasMap.get(instalacaoAtiva.campanha_id),
+          };
+        }
+
+        // Disponível (qualquer outro caso)
+        return {
+          ...endereco,
+          status_real: "disponivel" as const,
+        };
+      });
+
+      setEnderecos(enderecosComStatus);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar endereços",
@@ -53,24 +133,33 @@ const MapPage = () => {
     }
   };
 
-  const getMarkerColor = (status: Endereco["status"]): string => {
+  // Filtrar endereços
+  const enderecosFiltrados = enderecos.filter((e) => {
+    if (filtroStatus === "todos") return true;
+    return e.status_real === filtroStatus;
+  });
+
+  const getMarkerColor = (statusReal: Endereco["status_real"]): string => {
     const colors = {
       disponivel: "#22c55e", // verde
       ocupado: "#ef4444", // vermelho
-      inativo: "#9ca3af", // cinza
-      manutencao: "#f97316", // laranja
     };
-    return colors[status];
+    return colors[statusReal];
   };
 
-  const getStatusLabel = (status: Endereco["status"]): string => {
+  const getStatusLabel = (statusReal: Endereco["status_real"]): string => {
     const labels = {
       disponivel: "Disponível",
       ocupado: "Ocupado",
-      inativo: "Inativo",
-      manutencao: "Manutenção",
     };
-    return labels[status];
+    return labels[statusReal];
+  };
+
+  // Contar por status
+  const contadores = {
+    todos: enderecos.length,
+    disponivel: enderecos.filter((e) => e.status_real === "disponivel").length,
+    ocupado: enderecos.filter((e) => e.status_real === "ocupado").length,
   };
 
   if (!apiKey) {
@@ -114,12 +203,12 @@ const MapPage = () => {
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      <div className="animate-fade-in">
+      <div className="animate-fade-in space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">Mapa</h1>
             <p className="text-muted-foreground mt-1">
-              Visualização geográfica do inventário ({enderecos.length} endereços)
+              Visualização geográfica do inventário ({enderecosFiltrados.length} de {enderecos.length} endereços)
             </p>
           </div>
           
@@ -133,21 +222,50 @@ const MapPage = () => {
               <div className="w-3 h-3 rounded-full bg-red-500" />
               <span className="text-muted-foreground">Ocupado</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gray-400" />
-              <span className="text-muted-foreground">Inativo</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <span className="text-muted-foreground">Manutenção</span>
-            </div>
           </div>
+        </div>
+
+        {/* Filtros */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setFiltroStatus("todos")}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+              filtroStatus === "todos"
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-muted-foreground hover:bg-accent"
+            )}
+          >
+            Todos ({contadores.todos})
+          </button>
+          <button
+            onClick={() => setFiltroStatus("disponivel")}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+              filtroStatus === "disponivel"
+                ? "bg-green-500 text-white"
+                : "bg-card border border-border text-muted-foreground hover:bg-accent"
+            )}
+          >
+            Disponíveis ({contadores.disponivel})
+          </button>
+          <button
+            onClick={() => setFiltroStatus("ocupado")}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+              filtroStatus === "ocupado"
+                ? "bg-red-500 text-white"
+                : "bg-card border border-border text-muted-foreground hover:bg-accent"
+            )}
+          >
+            Ocupados ({contadores.ocupado})
+          </button>
         </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden h-[calc(100vh-200px)] animate-fade-in">
         <APIProvider apiKey={apiKey}>
-          <Map
+          <GoogleMap
             defaultCenter={defaultCenter}
             defaultZoom={defaultZoom}
             mapId="digital-favela-map"
@@ -155,7 +273,7 @@ const MapPage = () => {
             disableDefaultUI={false}
             style={{ width: "100%", height: "100%" }}
           >
-            {enderecos.map((endereco) => (
+            {enderecosFiltrados.map((endereco) => (
               <AdvancedMarker
                 key={endereco.id}
                 position={{ lat: endereco.lat, lng: endereco.long }}
@@ -166,7 +284,7 @@ const MapPage = () => {
                     width: 24,
                     height: 24,
                     borderRadius: "50%",
-                    backgroundColor: getMarkerColor(endereco.status),
+                    backgroundColor: getMarkerColor(endereco.status_real),
                     border: "2px solid white",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
                     cursor: "pointer",
@@ -178,8 +296,10 @@ const MapPage = () => {
             {selectedMarker && (
               <InfoWindow
                 position={{
-                  lat: enderecos.find((e) => e.id === selectedMarker)?.lat || 0,
-                  lng: enderecos.find((e) => e.id === selectedMarker)?.long || 0,
+                  lat: enderecosFiltrados.find((e) => e.id === selectedMarker)?.lat || 
+                      enderecos.find((e) => e.id === selectedMarker)?.lat || 0,
+                  lng: enderecosFiltrados.find((e) => e.id === selectedMarker)?.long || 
+                      enderecos.find((e) => e.id === selectedMarker)?.long || 0,
                 }}
                 onCloseClick={() => setSelectedMarker(null)}
               >
@@ -204,18 +324,23 @@ const MapPage = () => {
                           <span className="font-medium">Status:</span>
                           <span
                             className="px-2 py-0.5 rounded-full text-white text-xs"
-                            style={{ backgroundColor: getMarkerColor(endereco.status) }}
+                            style={{ backgroundColor: getMarkerColor(endereco.status_real) }}
                           >
-                            {getStatusLabel(endereco.status)}
+                            {getStatusLabel(endereco.status_real)}
                           </span>
                         </p>
+                        {endereco.status_real === "ocupado" && endereco.campanha_nome && (
+                          <p className="pt-1">
+                            <span className="font-medium">Campanha:</span> {endereco.campanha_nome}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
                 })()}
               </InfoWindow>
             )}
-          </Map>
+          </GoogleMap>
         </APIProvider>
       </div>
     </div>

@@ -192,7 +192,7 @@ const CampaignDetail = () => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <p className="text-2xl font-display font-bold text-foreground">
                 {campaign.total_pontos}
@@ -204,6 +204,12 @@ const CampaignDetail = () => {
                 {campaign.pontos_instalados}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Instalados</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border p-4 text-center">
+              <p className="text-2xl font-display font-bold text-gray-600">
+                {campaign.pontos_finalizados}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Finalizados</p>
             </div>
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <p className="text-2xl font-display font-bold text-primary">
@@ -573,6 +579,15 @@ const CampaignDetail = () => {
                   <p className="text-muted-foreground">Cidade(s)</p>
                   <p className="text-foreground font-medium">
                     {campaign.cidade || "Não especificado"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Users className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-muted-foreground">Criado por</p>
+                  <p className="text-foreground font-medium">
+                    {campaign.criado_por_nome || "Não especificado"}
                   </p>
                 </div>
               </div>

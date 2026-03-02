@@ -65,7 +65,8 @@ export function useAtivarInstalacao() {
     },
     onSuccess: () => {
       // Invalidar TODAS as queries relacionadas
-      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["campaign"] }); // Invalida todas as campanhas individuais
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] }); // Invalida lista de campanhas
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes-aviso"] });
       queryClient.invalidateQueries({ queryKey: ["campanhas"] });
@@ -133,7 +134,8 @@ export function useFinalizarInstalacao() {
     },
     onSuccess: () => {
       // Invalidar TODAS as queries relacionadas
-      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["campaign"] }); // Invalida todas as campanhas individuais
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] }); // Invalida lista de campanhas
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["instalacoes-aviso"] });
       queryClient.invalidateQueries({ queryKey: ["enderecos"] });
@@ -198,7 +200,26 @@ export function useSubstituirEndereco() {
 
       if (updateError) throw updateError;
 
-      // 4. Liberar endereço antigo no inventário
+      // 4. Registrar no histórico de mudanças
+      const { error: historicoError } = await supabase
+        .from("historico_mudancas_endereco")
+        .insert({
+          instalacao_id: data.instalacaoId,
+          campanha_id: data.campanhaId,
+          endereco_antigo_id: instalacaoAntiga.endereco_id,
+          endereco_novo_id: data.novoEnderecoId,
+          motivo: data.motivoSubstituicao,
+          realizado_por: user?.id,
+        });
+
+      if (historicoError) {
+        console.error("⚠️ Erro ao registrar histórico:", historicoError);
+        // Não falha a operação, apenas loga
+      } else {
+        console.log("✅ [HISTÓRICO REGISTRADO]");
+      }
+
+      // 5. Liberar endereço antigo no inventário
       const { error: enderecoAntigoError } = await supabase
         .from("enderecos")
         .update({ status: "disponivel" })
@@ -208,7 +229,7 @@ export function useSubstituirEndereco() {
         console.error("⚠️ Erro ao liberar endereço antigo:", enderecoAntigoError);
       }
 
-      // 5. Marcar novo endereço como ocupado
+      // 6. Marcar novo endereço como ocupado
       const { error: enderecoNovoError } = await supabase
         .from("enderecos")
         .update({ status: "ocupado" })
@@ -223,13 +244,15 @@ export function useSubstituirEndereco() {
     },
     onSuccess: () => {
       // Invalidar TODAS as queries relacionadas
-      queryClient.invalidateQueries({ queryKey: ["campaign-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["campaign"] }); // Invalida todas as campanhas individuais
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] }); // Invalida lista de campanhas
       queryClient.invalidateQueries({ queryKey: ["instalacoes"] });
       queryClient.invalidateQueries({ queryKey: ["enderecos"] });
       queryClient.invalidateQueries({ queryKey: ["campanhas"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["historico-mudancas"] });
     },
   });
 }

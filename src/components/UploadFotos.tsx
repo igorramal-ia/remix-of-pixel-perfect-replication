@@ -3,6 +3,7 @@ import { X, Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUploadFotoInstalacao, useDeletarFotoInstalacao } from "@/hooks/useInstalacoes";
+import { ImagemSegura } from "./ImagemSegura";
 
 interface UploadFotosProps {
   campanhaId: string;
@@ -201,7 +202,7 @@ export function UploadFotos({
               key={index}
               className="relative aspect-square rounded-lg overflow-hidden border border-border group"
             >
-              <img
+              <ImagemSegura
                 src={foto}
                 alt={`Foto ${index + 1}`}
                 className="w-full h-full object-cover"

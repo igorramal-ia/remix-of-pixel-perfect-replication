@@ -22,7 +22,7 @@ export function useInventory() {
   return useQuery({
     queryKey: ["inventory"],
     queryFn: async () => {
-      // Buscar endereços com proprietários
+      // Buscar endereços com proprietários (apenas ativos)
       const { data: enderecos, error: enderecosError } = await supabase
         .from("enderecos")
         .select(`
@@ -34,10 +34,12 @@ export function useInventory() {
           status,
           lat,
           long,
+          ativo,
           proprietarios (
             nome
           )
         `)
+        .eq("ativo", true)
         .order("criado_em", { ascending: false });
 
       if (enderecosError) throw enderecosError;
@@ -115,6 +117,7 @@ export function useCreateEndereco() {
           lat: novoEndereco.lat || null,
           long: novoEndereco.long || null,
           status: "disponivel",
+          ativo: true,
           criado_por: user?.id,
         })
         .select()
@@ -148,6 +151,7 @@ export function useCreateEndereco() {
       // Invalidar TODAS as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
       queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos-disponiveis"] });
       queryClient.invalidateQueries({ queryKey: ["total-pontos"] });
       queryClient.invalidateQueries({ queryKey: ["distribuicao-status"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -156,33 +160,43 @@ export function useCreateEndereco() {
   });
 }
 
-// Função para buscar coordenadas via Google Maps Geocoding API
-export async function geocodeAddress(
-  endereco: string,
-  cidade: string,
-  uf: string,
-  apiKey: string
-): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const address = `${endereco}, ${cidade}, ${uf}, Brasil`;
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-      address
-    )}&key=${apiKey}`;
+export function useDeletarEndereco() {
+  const queryClient = useQueryClient();
 
-    const response = await fetch(url);
-    const data = await response.json();
+  return useMutation({
+    mutationFn: async (enderecoId: string) => {
+      // Verificar se tem instalações ativas
+      const { data: instalacoes, error: instalacoesError } = await supabase
+        .from("instalacoes")
+        .select("id, status")
+        .eq("endereco_id", enderecoId)
+        .eq("status", "ativa");
 
-    if (data.status === "OK" && data.results.length > 0) {
-      const location = data.results[0].geometry.location;
-      return {
-        lat: location.lat,
-        lng: location.lng,
-      };
-    }
+      if (instalacoesError) throw instalacoesError;
 
-    return null;
-  } catch (error) {
-    console.error("Erro ao buscar coordenadas:", error);
-    return null;
-  }
+      if (instalacoes && instalacoes.length > 0) {
+        throw new Error("Não é possível excluir endereço com instalações ativas");
+      }
+
+      // Soft delete - marcar como inativo
+      const { error } = await supabase
+        .from("enderecos")
+        .update({ ativo: false })
+        .eq("id", enderecoId);
+
+      if (error) throw error;
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      // Invalidar TODAS as queries relacionadas
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos"] });
+      queryClient.invalidateQueries({ queryKey: ["enderecos-disponiveis"] });
+      queryClient.invalidateQueries({ queryKey: ["total-pontos"] });
+      queryClient.invalidateQueries({ queryKey: ["distribuicao-status"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["coordenador-dashboard"] });
+    },
+  });
 }

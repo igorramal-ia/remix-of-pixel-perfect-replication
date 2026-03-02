@@ -38,8 +38,8 @@ import type { FiltrosRelatorios, TipoRelatorio } from '@/types/relatorios';
 export default function RelatoriosPage() {
   const { hasRole } = useAuth();
   const [filtros, setFiltros] = useState<FiltrosRelatorios>({
-    campanhaId: '',
-    tipo: '',
+    campanhaId: 'todas',
+    tipo: 'todos',
     dataInicio: '',
     dataFim: '',
   });
@@ -53,8 +53,8 @@ export default function RelatoriosPage() {
 
   const handleLimparFiltros = () => {
     setFiltros({
-      campanhaId: '',
-      tipo: '',
+      campanhaId: 'todas',
+      tipo: 'todos',
       dataInicio: '',
       dataFim: '',
     });
@@ -122,7 +122,7 @@ export default function RelatoriosPage() {
                 <SelectValue placeholder="Todas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="todas">Todas</SelectItem>
                 {campanhas?.map((campanha) => (
                   <SelectItem key={campanha.id} value={campanha.id}>
                     {campanha.nome}
@@ -143,7 +143,7 @@ export default function RelatoriosPage() {
                 <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="parcial">Parcial</SelectItem>
                 <SelectItem value="final">Final</SelectItem>
               </SelectContent>

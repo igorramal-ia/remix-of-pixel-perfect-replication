@@ -104,8 +104,8 @@ export interface DadosRelatorio {
 
 // Filtros para histórico de relatórios
 export interface FiltrosRelatorios {
-  campanhaId?: string;
-  tipo?: TipoRelatorio | '';
+  campanhaId?: string | 'todas';
+  tipo?: TipoRelatorio | '' | 'todos';
   dataInicio?: string;
   dataFim?: string;
 }

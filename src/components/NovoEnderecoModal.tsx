@@ -27,7 +27,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateEndereco, geocodeAddress } from "@/hooks/useInventoryData";
+import { useCreateEndereco } from "@/hooks/useInventoryData";
+import { geocodeEndereco } from "@/services/geocodingService";
 import { Loader2, MapPin, CheckCircle } from "lucide-react";
 
 const formSchema = z.object({
@@ -72,18 +73,18 @@ export function NovoEnderecoModal({ open, onOpenChange }: NovoEnderecoModalProps
       let lng: number | undefined;
 
       // Buscar coordenadas via Google Maps Geocoding API
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY;
       if (apiKey) {
         setGeocoding(true);
-        const coords = await geocodeAddress(
+        const result = await geocodeEndereco(
           data.endereco,
           data.cidade,
-          data.uf,
-          apiKey
+          data.uf
         );
         
-        if (coords) {
-          lat = coords.lat;
-          lng = coords.lng;
+        if (result) {
+          lat = result.latitude;
+          lng = result.longitude;
           toast({
             title: "Coordenadas encontradas",
             description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,

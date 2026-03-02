@@ -10,11 +10,14 @@ export interface Campaign {
   data_fim: string | null;
   cidade: string | null;
   gestor_id: string | null;
+  criado_por: string | null;
   criado_em: string;
   total_pontos: number;
   pontos_instalados: number;
+  pontos_finalizados: number;
   progresso: number;
   gestor_nome: string | null;
+  criado_por_nome: string | null;
   coordenadores: Array<{ id: string; nome: string }>;
 }
 
@@ -75,6 +78,13 @@ export function useCampaigns() {
             .eq("campanha_id", campanha.id)
             .eq("status", "ativa");
 
+          // Buscar instalações finalizadas
+          const { count: pontosFinalizados } = await supabase
+            .from("instalacoes")
+            .select("*", { count: "exact", head: true })
+            .eq("campanha_id", campanha.id)
+            .eq("status", "finalizada");
+
           // Buscar coordenadores vinculados
           const { data: coordenadoresVinculo } = await supabase
             .from("campanha_coordenadores")
@@ -99,9 +109,10 @@ export function useCampaigns() {
             console.log(`  ⚠️ Nenhum vínculo encontrado`);
           }
 
+          const pontosRealizados = (pontosInstalados || 0) + (pontosFinalizados || 0);
           const progresso =
             totalPontos && totalPontos > 0
-              ? Math.round(((pontosInstalados || 0) / totalPontos) * 100)
+              ? Math.round((pontosRealizados / totalPontos) * 100)
               : 0;
 
           return {
@@ -115,6 +126,7 @@ export function useCampaigns() {
             criado_em: campanha.criado_em,
             total_pontos: totalPontos || 0,
             pontos_instalados: pontosInstalados || 0,
+            pontos_finalizados: pontosFinalizados || 0,
             progresso,
             gestor_nome: gestorNome,
             coordenadores: coordenadores || [],
@@ -150,6 +162,20 @@ export function useCampaignDetail(id: string) {
           .single();
         
         gestorNome = gestorData?.nome || null;
+      }
+
+      // Buscar nome do criador se existir, senão usa o gestor
+      let criadoPorNome = null;
+      const criadorId = campanha.criado_por || campanha.gestor_id;
+      
+      if (criadorId) {
+        const { data: criadorData } = await supabase
+          .from("profiles")
+          .select("nome")
+          .eq("id", criadorId)
+          .single();
+        
+        criadoPorNome = criadorData?.nome || null;
       }
 
       // Buscar instalações e endereços (queries separadas)
@@ -225,8 +251,11 @@ export function useCampaignDetail(id: string) {
       const totalPontos = instalacoes?.length || 0;
       const pontosInstalados =
         instalacoes?.filter((i) => i.status === "ativa").length || 0;
+      const pontosFinalizados =
+        instalacoes?.filter((i) => i.status === "finalizada").length || 0;
+      const pontosRealizados = pontosInstalados + pontosFinalizados;
       const progresso =
-        totalPontos > 0 ? Math.round((pontosInstalados / totalPontos) * 100) : 0;
+        totalPontos > 0 ? Math.round((pontosRealizados / totalPontos) * 100) : 0;
 
       return {
         id: campanha.id,
@@ -236,11 +265,14 @@ export function useCampaignDetail(id: string) {
         data_fim: campanha.data_fim,
         cidade: campanha.cidade,
         gestor_id: campanha.gestor_id,
+        criado_por: campanha.criado_por,
         criado_em: campanha.criado_em,
         total_pontos: totalPontos,
         pontos_instalados: pontosInstalados,
+        pontos_finalizados: pontosFinalizados,
         progresso,
         gestor_nome: gestorNome,
+        criado_por_nome: criadoPorNome,
         coordenadores: coordenadores || [],
         enderecos: enderecosComInstalacao,
       } as CampaignDetail;
@@ -303,18 +335,13 @@ export function useCoordenadores() {
   });
 }
 
-export function useEnderecosDisponiveis() {
+export function useEnderecosDisponiveis(uf?: string, cidade?: string) {
   return useQuery({
-    queryKey: ["enderecos-disponiveis"],
+    queryKey: ["enderecos-disponiveis", uf, cidade],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("enderecos")
-        .select("id, endereco, comunidade, cidade, uf")
-        .eq("status", "disponivel")
-        .order("comunidade");
-
-      if (error) throw error;
-      return data || [];
+      // Importar dinamicamente para evitar circular dependency
+      const { buscarEnderecosDisponiveis } = await import("@/services/disponibilidadeService");
+      return buscarEnderecosDisponiveis(uf, cidade);
     },
   });
 }

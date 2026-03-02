@@ -1,9 +1,18 @@
 import { useState } from "react";
-import { Search, Plus, MapPin, MoreHorizontal } from "lucide-react";
+import { Search, Plus, MapPin, MoreHorizontal, Trash2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { NovoEnderecoModal } from "@/components/NovoEnderecoModal";
-import { useInventory } from "@/hooks/useInventoryData";
+import { ValidarCoordenadasModal } from "@/components/ValidarCoordenadasModal";
+import { useInventory, useDeletarEndereco } from "@/hooks/useInventoryData";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 type StatusFilter = "all" | "disponivel" | "ocupado" | "inativo" | "manutencao";
@@ -12,8 +21,31 @@ const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [validarModalOpen, setValidarModalOpen] = useState(false);
+  const { toast } = useToast();
   
   const { data: inventory, isLoading } = useInventory();
+  const deletarEndereco = useDeletarEndereco();
+
+  const handleDeletar = async (enderecoId: string, endereco: string) => {
+    if (!confirm(`Tem certeza que deseja excluir o endereço "${endereco}"?\n\nEsta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      await deletarEndereco.mutateAsync(enderecoId);
+      toast({
+        title: "Endereço excluído",
+        description: "O endereço foi removido com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const filtered = inventory?.filter((item) => {
     const matchesSearch =
@@ -58,13 +90,22 @@ const Inventory = () => {
             )}
           </p>
         </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg gradient-brand text-primary-foreground text-sm font-semibold shadow-md hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Endereço
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setValidarModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-card border border-border text-sm font-semibold hover:bg-accent transition-colors"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            Validar Coordenadas
+          </button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg gradient-brand text-primary-foreground text-sm font-semibold shadow-md hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Endereço
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -211,9 +252,22 @@ const Inventory = () => {
                       )}
                     </td>
                     <td className="px-5 py-3.5">
-                      <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleDeletar(item.id, item.endereco)}
+                            className="text-red-600 focus:text-red-600 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir Endereço
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))
@@ -232,6 +286,7 @@ const Inventory = () => {
       </div>
 
       <NovoEnderecoModal open={modalOpen} onOpenChange={setModalOpen} />
+      <ValidarCoordenadasModal open={validarModalOpen} onOpenChange={setValidarModalOpen} />
     </div>
   );
 };
